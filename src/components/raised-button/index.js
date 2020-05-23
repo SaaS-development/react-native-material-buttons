@@ -12,62 +12,28 @@ export default class RaisedButton extends PureComponent {
   constructor(props) {
     super(props);
 
-    let {
-      disabled,
-      focusAnimation = new Animated.Value(0),
-      disableAnimation = new Animated.Value(disabled? 1 : 0),
-    } = this.props;
-
     this.state = {
-      focusAnimation,
-      disableAnimation,
+      focusAnimation: new Animated.Value(0),
     };
   }
 
   render() {
-    let { focusAnimation, disableAnimation } = this.state;
     let { style, children, ...props } = this.props;
+    let { disabled } = this.props;
+    let { focusAnimation } = this.state;
 
-    let animation = Animated
-      .subtract(focusAnimation, disableAnimation);
+    let buttonStyle = {
+      ...((disabled && Platform.OS === 'ios')? { shadowColor: 'transparent' } : {}),
 
-    let buttonStyle = Platform.select({
-      ios: {
-        shadowOpacity: disableAnimation.interpolate({
+      [Platform.select({ ios: 'shadowRadius', android: 'elevation' })]:
+        disabled? 0 : focusAnimation.interpolate({
           inputRange: [0, 1],
-          outputRange: [0.30, 0],
+          outputRange: [2, Platform.select({ ios: 4, android: 8 })],
         }),
-
-        shadowRadius: animation.interpolate({
-          inputRange: [-1, 0, 1],
-          outputRange: [0, 2, 4],
-        }),
-
-        shadowOffset: {
-          width: 0,
-
-          height: animation.interpolate({
-            inputRange: [-1, 0, 1],
-            outputRange: [0, 1, 2],
-          }),
-        },
-      },
-
-      android: {
-        elevation: animation.interpolate({
-          inputRange: [-1, 0, 1],
-          outputRange: [0, 2, 8],
-        }),
-      },
-    });
+    };
 
     return (
-      <Button
-        {...props}
-        style={[ styles.container, buttonStyle, style ]}
-        focusAnimation={focusAnimation}
-        disableAnimation={disableAnimation}
-      >
+      <Button style={[styles.container, buttonStyle, style]} {...props} focusAnimation={focusAnimation}>
         {children}
       </Button>
     );

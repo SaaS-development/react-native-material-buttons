@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
-import { View, Animated, Easing } from 'react-native';
+import { Animated, Easing } from 'react-native';
 import Ripple from 'react-native-material-ripple';
 
 import { styles } from './styles';
@@ -13,15 +13,15 @@ export default class Button extends PureComponent {
     hitSlop: { top: 6, right: 4, bottom: 6, left: 4 },
 
     color: 'rgb(224, 224, 224)',
-    disabledColor: 'rgb(240, 240, 240)',
 
     shadeColor: 'rgb(0, 0, 0)',
     shadeOpacity: 0.12,
     shadeBorderRadius: 2,
 
+    focusAnimation: null,
     focusAnimationDuration: 225,
-    disableAnimationDuration: 225,
 
+    disabledColor: 'rgba(0, 0, 0, .12)',
     disabled: false,
   };
 
@@ -29,7 +29,6 @@ export default class Button extends PureComponent {
     ...Ripple.propTypes,
 
     color: PropTypes.string,
-    disabledColor: PropTypes.string,
 
     shadeColor: PropTypes.string,
     shadeOpacity: PropTypes.number,
@@ -38,111 +37,93 @@ export default class Button extends PureComponent {
     focusAnimation: PropTypes.instanceOf(Animated.Value),
     focusAnimationDuration: PropTypes.number,
 
-    disableAnimation: PropTypes.instanceOf(Animated.Value),
-    disableAnimationDuration: PropTypes.number,
-
-    payload: PropTypes.any,
+    disabledColor: PropTypes.string,
   };
 
   constructor(props) {
     super(props);
 
     this.onPress = this.onPress.bind(this);
-    this.onPressIn = this.onFocusChange.bind(this, true);
-    this.onPressOut = this.onFocusChange.bind(this, false);
-
-    let {
-      disabled,
-      focusAnimation = new Animated.Value(0),
-      disableAnimation = new Animated.Value(disabled? 1 : 0),
-    } = this.props;
+    this.onPressIn = this.onPressIn.bind(this);
+    this.onPressOut = this.onPressOut.bind(this);
 
     this.state = {
-      focusAnimation,
-      disableAnimation,
+      focusAnimation: this.props.focusAnimation || new Animated.Value(0),
     };
   }
 
-  componentDidUpdate(prevProps) {
-    let { disabled } = this.props;
-
-    if (disabled ^ prevProps.disabled) {
-      let { disableAnimationDuration: duration } = this.props;
-      let { disableAnimation } = this.state;
-
-      Animated
-        .timing(disableAnimation, { toValue: disabled? 1 : 0, duration })
-        .start();
-    }
-  }
-
   onPress() {
-    let { onPress, payload } = this.props;
+    let { onPress } = this.props;
 
     if ('function' === typeof onPress) {
-      onPress(payload);
+      onPress();
     }
   }
 
-  onFocusChange(focused) {
+  onPressIn() {
     let { focusAnimation } = this.state;
     let { focusAnimationDuration } = this.props;
 
     Animated
       .timing(focusAnimation, {
-        toValue: focused? 1 : 0,
+        toValue: 1,
         duration: focusAnimationDuration,
         easing: Easing.out(Easing.ease),
       })
       .start();
   }
 
+  onPressOut() {
+    let { focusAnimation } = this.state;
+    let { focusAnimationDuration } = this.props;
+
+    Animated
+      .timing(focusAnimation, {
+        toValue: 0,
+        duration: focusAnimationDuration,
+        easing: Easing.out(Easing.ease),
+      })
+      .start();
+  }
+
+  componentWillReceiveProps(props) {
+    let { focusAnimation } = props;
+
+    if (focusAnimation && focusAnimation !== this.state.focusAnimation) {
+      this.setState({ focusAnimation });
+    }
+  }
+
   render() {
-    let { focusAnimation, disableAnimation } = this.state;
-    let {
-      color,
-      disabledColor,
-      shadeColor,
-      shadeOpacity,
-      shadeBorderRadius,
-      style,
-      children,
-      ...props
-    } = this.props;
+    let { color, disabledColor, shadeColor, shadeOpacity, shadeBorderRadius, style, children, ...props } = this.props;
+    let { focusAnimation } = this.state;
+
+    let opacity = focusAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, shadeOpacity],
+    });
 
     let rippleStyle = {
-      backgroundColor: disableAnimation.interpolate({
-        inputRange: [0, 1],
-        outputRange: [color, disabledColor],
-      }),
-    };
-
-    let shadeContainerStyle = {
-      borderRadius: shadeBorderRadius,
+      backgroundColor: props.disabled? disabledColor : color,
     };
 
     let shadeStyle = {
       backgroundColor: shadeColor,
-      opacity: focusAnimation.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, shadeOpacity],
-      }),
+      borderRadius: shadeBorderRadius,
+      opacity,
     };
 
     return (
       <Ripple
         {...props}
 
-        style={[ styles.container, rippleStyle, style ]}
+        style={[styles.container, rippleStyle, style]}
         onPress={this.onPress}
         onPressIn={this.onPressIn}
         onPressOut={this.onPressOut}
       >
         {children}
-
-        <View style={[ styles.shadeContainer, shadeContainerStyle ]}>
-          <Animated.View style={[ styles.shade, shadeStyle ]} />
-        </View>
+        <Animated.View style={[ styles.shade, shadeStyle ]} />
       </Ripple>
     );
   }

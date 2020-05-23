@@ -6,13 +6,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
 
-  shadeContainer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-
   shade: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
   },
 });
 

@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import React, { PureComponent } from 'react';
-import { Animated } from 'react-native';
+import { Text } from 'react-native';
 
 import RaisedButton from '../raised-button';
 import { styles } from './styles';
@@ -16,25 +16,11 @@ export default class RaisedTextButton extends PureComponent {
 
     title: PropTypes.string.isRequired,
     titleColor: PropTypes.string,
-    titleStyle: Animated.Text.propTypes.style,
+    // titleStyle: Text.propTypes.style,
     disabledTitleColor: PropTypes.string,
   };
 
-  constructor(props) {
-    super(props);
-
-    let {
-      disabled,
-      disableAnimation = new Animated.Value(disabled? 1 : 0),
-    } = this.props;
-
-    this.state = {
-      disableAnimation,
-    };
-  }
-
   render() {
-    let { disableAnimation } = this.state;
     let {
       title,
       titleColor,
@@ -44,25 +30,19 @@ export default class RaisedTextButton extends PureComponent {
     } = this.props;
 
     let titleStyleOverrides = {
-      color: disableAnimation.interpolate({
-        inputRange: [0, 1],
-        outputRange: [titleColor, disabledTitleColor],
-      }),
+      color: props.disabled ?
+        disabledTitleColor :
+        titleColor,
     };
 
     return (
-      <RaisedButton
-        rippleColor={titleColor}
-        shadeColor={titleColor}
-        {...props}
-        disableAnimation={disableAnimation}
-      >
-        <Animated.Text
+      <RaisedButton rippleColor={titleColor} shadeColor={titleColor} {...props}>
+        <Text
           style={[styles.title, titleStyle, titleStyleOverrides]}
           numberOfLines={1}
         >
-          {title}
-        </Animated.Text>
+          {String(title).toUpperCase()}
+        </Text>
       </RaisedButton>
     );
   }
